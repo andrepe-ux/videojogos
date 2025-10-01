@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Visualizador YouTube e Vídeo Local</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    position: relative;
+    background: linear-gradient(135deg, #00ff00, #808080, #ff0000);
+    color: #fff;
+  }
+
+  h2 {
+    text-align: center;
+  }
+
+  .section {
+    margin-bottom: 40px;
+    text-align: center;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  input[type="text"], input[type="number"], select, input[type="file"] {
+    padding: 5px;
+    margin: 2px;
+  }
+
+  button {
+    padding: 5px 10px;
+    margin: 2px;
+    cursor: pointer;
+  }
+
+  iframe, video {
+    width: 100%;
+    max-width: 1200px;
+    height: 675px;
+    background: black;
+    display: block;
+    margin: 0 auto;
+  }
+
+  #localImage {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 150px;
+    height: auto;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+  }
+</style>
+</head>
+<body>
+
+<h2>Visualizador de Vídeo YouTube e Local</h2>
+
+<!-- Seção YouTube -->
+<div class="section" id="youtubeSection">
+  <h3>YouTube</h3>
+  <input type="text" id="youtubeLink" placeholder="Cole o link do YouTube" size="50">
+  <label for="minutes">Minutos:</label>
+  <input type="number" id="ytMinutes" min="0" value="0" style="width:60px;">
+  <label for="seconds">Segundos:</label>
+  <input type="number" id="ytSeconds" min="0" max="59" value="0" style="width:60px;">
+  <div class="controls">
+    <button id="loadYouTube">Carregar YouTube</button>
+    <button id="ytPlay">Play</button>
+    <button id="ytPause">Pause</button>
+    <button id="ytBackward">-5s</button>
+    <button id="ytForward">+5s</button>
+    <label for="ytSpeed">Velocidade:</label>
+    <select id="ytSpeed">
+      <option value="0.25">0.25x</option>
+      <option value="0.5">0.5x</option>
+      <option value="1" selected>1x</option>
+      <option value="1.5">1.5x</option>
+      <option value="2">2x</option>
+    </select>
+  </div>
+  <div id="youtubePlayerContainer"></div>
+</div>
+
+<!-- Seção Vídeo Local -->
+<div class="section" id="localSection">
+  <h3>Vídeo Local</h3>
+  <input type="file" id="localFile" accept="video/*">
+  <label for="localMinutes">Minutos:</label>
+  <input type="number" id="localMinutes" min="0" value="0" style="width:60px;">
+  <label for="localSeconds">Segundos:</label>
+  <input type="number" id="localSeconds" min="0" max="59" value="0" style="width:60px;">
+  <div class="controls">
+    <button id="loadLocal">Carregar Vídeo Local</button>
+    <button id="localPlay">Play</button>
+    <button id="localPause">Pause</button>
+    <button id="localBackward">-5s</button>
+    <button id="localForward">+5s</button>
+    <label for="localSpeed">Velocidade:</label>
+    <select id="localSpeed">
+      <option value="0.25">0.25x</option>
+      <option value="0.5">0.5x</option>
+      <option value="1" selected>1x</option>
+      <option value="1.5">1.5x</option>
+      <option value="2">2x</option>
+    </select>
+  </div>
+  <video id="localPlayer" controls></video>
+</div>
+
+<img id="localImage" src="minha-imagem.jpg" alt="Imagem local">
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+let ytPlayer;
+let localPlayer = document.getElementById('localPlayer');
+
+// Função para extrair ID do YouTube
+function getYouTubeVideoId(url) {
+  const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/;
+  const match = url.match(regex);
+  return match ? match[1] : null;
+}
+
+// Inicializa o player do YouTube
+function onYouTubeIframeAPIReady() {
+  ytPlayer = new YT.Player('youtubePlayerContainer', {
+    height: '675',
+    width: '1200',
+    videoId: '',
+  });
+}
+
+// Carregar YouTube
+document.getElementById('loadYouTube').addEventListener('click', () => {
+  const url = document.getElementById('youtubeLink').value.trim();
+  const minutes = parseInt(document.getElementById('ytMinutes').value) || 0;
+  const seconds = parseInt(document.getElementById('ytSeconds').value) || 0;
+  const startTime = minutes * 60 + seconds;
+
+  const videoId = getYouTubeVideoId(url);
+  if (!videoId) {
+    alert('Link do YouTube inválido!');
+    return;
+  }
+
+  if (ytPlayer && ytPlayer.loadVideoById) {
+    ytPlayer.loadVideoById({ videoId, startSeconds: startTime });
+  }
+});
+
+// YouTube Play/Pause
+document.getElementById('ytPlay').addEventListener('click', () => {
+  if (ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
+});
+document.getElementById('ytPause').addEventListener('click', () => {
+  if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
+});
+
+// YouTube Avançar/Retroceder 5s
+document.getElementById('ytBackward').addEventListener('click', () => {
+  if (ytPlayer && ytPlayer.getCurrentTime) {
+    const newTime = Math.max(0, ytPlayer.getCurrentTime() - 5);
+    ytPlayer.seekTo(newTime, true);
+  }
+});
+document.getElementById('ytForward').addEventListener('click', () => {
+  if (ytPlayer && ytPlayer.getCurrentTime && ytPlayer.getDuration) {
+    const newTime = Math.min(ytPlayer.getDuration(), ytPlayer.getCurrentTime() + 5);
+    ytPlayer.seekTo(newTime, true);
+  }
+});
+
+// YouTube Velocidade
+document.getElementById('ytSpeed').addEventListener('change', () => {
+  const rate = parseFloat(document.getElementById('ytSpeed').value);
+  if (ytPlayer && ytPlayer.setPlaybackRate) ytPlayer.setPlaybackRate(rate);
+});
+
+// Carregar Vídeo Local com início em minutos e segundos
+document.getElementById('loadLocal').addEventListener('click', () => {
+  const file = document.getElementById('localFile').files[0];
+  if (!file) {
+    alert('Selecione um arquivo de vídeo local.');
+    return;
+  }
+  const minutes = parseInt(document.getElementById('localMinutes').value) || 0;
+  const seconds = parseInt(document.getElementById('localSeconds').value) || 0;
+  const startTime = minutes * 60 + seconds;
+
+  const url = URL.createObjectURL(file);
+  localPlayer.src = url;
+
+  localPlayer.addEventListener('loadedmetadata', function() {
+    if (startTime < localPlayer.duration) {
+      localPlayer.currentTime = startTime;
+    }
+    localPlayer.play();
+  }, { once: true });
+});
+
+// Vídeo Local Play/Pause
+document.getElementById('localPlay').addEventListener('click', () => {
+  localPlayer.play();
+});
+document.getElementById('localPause').addEventListener('click', () => {
+  localPlayer.pause();
+});
+
+// Vídeo Local Avançar/Retroceder 5s
+document.getElementById('localBackward').addEventListener('click', () => {
+  localPlayer.currentTime = Math.max(0, localPlayer.currentTime - 5);
+});
+document.getElementById('localForward').addEventListener('click', () => {
+  localPlayer.currentTime = Math.min(localPlayer.duration, localPlayer.currentTime + 5);
+});
+
+// Vídeo Local Velocidade
+document.getElementById('localSpeed').addEventListener('change', () => {
+  localPlayer.playbackRate = parseFloat(document.getElementById('localSpeed').value);
+});
+</script>
+
+</body>
+</html>
